@@ -120,7 +120,7 @@ Clause* BinaryResolution::generateClause(
   auto passiveClauseContainer = _salg->getPassiveClauseContainer();
   bool andThatsIt = false;
   bool hasAgeLimitStrike = passiveClauseContainer && passiveClauseContainer->mayBeAbleToDiscriminateClausesUnderConstructionOnLimits()
-                                              && passiveClauseContainer->exceedsAgeLimit(wlb, numPositiveLiteralsLowerBound, inf, andThatsIt);
+                                                  && passiveClauseContainer->exceedsAgeLimit(numPositiveLiteralsLowerBound, inf, andThatsIt);
   if (hasAgeLimitStrike && andThatsIt) { // we are dealing with purely age-limited container (no need for weight-related investigations)
     RSTAT_CTR_INC("binary resolutions skipped for (pure) age limit before building clause");
     env.statistics->discardedNonRedundantClauses++;
