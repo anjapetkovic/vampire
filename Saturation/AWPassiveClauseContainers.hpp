@@ -8,13 +8,13 @@
  * and in the source directory
  */
 /**
- * @file AWPassiveClauseContainer.hpp
- * Defines the class AWPassiveClauseContainer
+ * @file AWPassiveClauseContainers.hpp
+ * Defines the class AWPassiveClauseContainer and related
  * @since 31/12/2007 Manchester
  */
 
-#ifndef __AWPassiveClauseContainer__
-#define __AWPassiveClauseContainer__
+#ifndef __AWPassiveClauseContainers__
+#define __AWPassiveClauseContainers__
 
 #include <memory>
 #include <vector>
@@ -22,6 +22,7 @@
 #include "Kernel/Clause.hpp"
 #include "Kernel/ClauseQueue.hpp"
 #include "ClauseContainer.hpp"
+#include "AbstractPassiveClauseContainers.hpp"
 
 #include "Lib/Allocator.hpp"
 
@@ -34,6 +35,10 @@ class AgeQueue
 {
 public:
   AgeQueue(const Options& opt) : _opt(opt) {}
+
+  typedef std::pair<unsigned,unsigned> OrdVal;
+  static constexpr OrdVal maxOrdVal = std::make_pair(UINT_MAX,UINT_MAX);
+  OrdVal getOrdVal(Clause* cl) const;
 protected:
   virtual bool lessThan(Clause*,Clause*);
 private:
@@ -45,10 +50,30 @@ class WeightQueue
 {
 public:
   WeightQueue(const Options& opt) : _opt(opt) {}
+
+  typedef std::pair<unsigned,unsigned> OrdVal;
+  static constexpr OrdVal maxOrdVal = std::make_pair(UINT_MAX,UINT_MAX);
+  OrdVal getOrdVal(Clause* cl) const;
 protected:
   virtual bool lessThan(Clause*,Clause*);
 private:
   const Shell::Options& _opt;
+};
+
+class AgeBasedPassiveClauseContainer
+: public SingleQueuePassiveClauseContainer<AgeQueue>
+{
+public:
+  AgeBasedPassiveClauseContainer(bool isOutermost, const Shell::Options& opt, std::string name)
+    : SingleQueuePassiveClauseContainer<AgeQueue>(isOutermost,opt,name) {}
+};
+
+class WeightBasedPassiveClauseContainer
+: public SingleQueuePassiveClauseContainer<WeightQueue>
+{
+public:
+  WeightBasedPassiveClauseContainer(bool isOutermost, const Shell::Options& opt, std::string name)
+    : SingleQueuePassiveClauseContainer<WeightQueue>(isOutermost,opt,name) {}
 };
 
 /**
@@ -151,4 +176,4 @@ public:
 
 };
 
-#endif /* __AWPassiveClauseContainer__ */
+#endif /* __AWPassiveClauseContainers__ */
