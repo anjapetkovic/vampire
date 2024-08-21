@@ -69,13 +69,24 @@ public:
   AgeBasedPassiveClauseContainer(bool isOutermost, const Shell::Options& opt, std::string name)
     : SingleQueuePassiveClauseContainer<AgeQueue>(isOutermost,opt,name) {}
 
+  /**
+   * Note about performance. It's not clear why, but pure AgeBasedPassiveClauseContainer
+   * actually performs worse when trying to do LRS tricks (as implemented by the functions below);
+   * However, I didn't check what the implication for unique solutions is, so it's fine to have
+   * the LRS support, but don't expect it to beat Otter in this particular case.
+   *
+   * Possible explanation: some age-wise large clauses could still be effective (forward-)reducers
+   * (since they may still be weight-wise small) and under Otter which backs up LRS (as opposed to Discount),
+   * it's the reducers that could help reaching the empty clause before even getting selected.
+   * (AWPassiveClauseContainer will keep these, because it only deletes those clauses which both queues consider bad.)
+   */
+
   bool mayBeAbleToDiscriminateChildrenOnLimits() const override { return limitsActive(); }
   bool allChildrenNecessarilyExceedLimits(Clause* cl, unsigned upperBoundNumSelLits) const override {
     return cl->age() >= _curLimit.first;
   }
 
   bool mayBeAbleToDiscriminateClausesUnderConstructionOnLimits() const override { return true; }
-
   bool exceedsAgeLimit(unsigned numPositiveLiterals, const Inference& inference, bool& andThatsIt) const override
   {
     andThatsIt = true; // we are the pure age-queue container
