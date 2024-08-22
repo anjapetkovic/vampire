@@ -389,49 +389,26 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
     // degenerate case: both containers are empty, so set limits to max.
     return setLimitsToMax();
   }
-  else
-  {
-    ASS(!_simulationCurrAgeCl->hasAux() || _simulationCurrWeightCl->hasAux());
-    ASS(_simulationCurrAgeCl->hasAux() || !_simulationCurrWeightCl->hasAux());
-  }
+
+  ASS(!_simulationCurrAgeCl->hasAux() || _simulationCurrWeightCl->hasAux());
+  ASS(_simulationCurrAgeCl->hasAux() || !_simulationCurrWeightCl->hasAux());
 
   unsigned maxAgeQueueAge;
   unsigned maxAgeQueueWeight;
   unsigned maxWeightQueueWeight;
 
-  // compute limits for age-queue
-  if (_simulationCurrAgeIt.hasNext())
+  if (_opt.lrsWeightLimitOnly())
   {
-    if (_opt.lrsWeightLimitOnly())
-    {
-      // if the option lrsWeightLimitOnly() is set, we want to discard all clauses which are too heavy, regardless of the age.
-      // we therefore make sure that fulfilsAgeLimit() always fails.
-      maxAgeQueueAge = 0;
-      maxAgeQueueWeight = 0;
-    } else {
-      // the age-queue is in use and the simulation didn't get to the end of the age-queue => set limits on age-queue
-      maxAgeQueueAge = _simulationCurrAgeCl->age();
-      maxAgeQueueWeight = _simulationCurrAgeCl->weightForClauseSelection(_opt);
-    }
-  }
-  else
-  {
-    // the age-queue is in use and the simulation got to the end of the age-queue => set no limits on age-queue
-    maxAgeQueueAge = UINT_MAX;
-    maxAgeQueueWeight = UINT_MAX;
+    // if the option lrsWeightLimitOnly() is set, we want to discard all clauses which are too heavy, regardless of the age.
+    // we therefore make sure that fulfilsAgeLimit() always fails.
+    maxAgeQueueAge = 0;
+    maxAgeQueueWeight = 0;
+  } else {
+    maxAgeQueueAge = _simulationCurrAgeCl->age();
+    maxAgeQueueWeight = _simulationCurrAgeCl->weightForClauseSelection(_opt);
   }
 
-  // compute limits for weight-queue
-  if (_simulationCurrWeightIt.hasNext())
-  {
-    // the weight-queue is in use and the simulation didn't get to the end of the weight-queue => set limits on weight-queue
-    maxWeightQueueWeight = _simulationCurrWeightCl->weightForClauseSelection(_opt);
-  }
-  else
-  {
-    // the weight-queue is in use and the simulation got to the end of the weight-queue => set no limits on weight-queue
-    maxWeightQueueWeight = UINT_MAX;
-  }
+  maxWeightQueueWeight = _simulationCurrWeightCl->weightForClauseSelection(_opt);
 
   return setLimits(maxAgeQueueAge, maxAgeQueueWeight,maxWeightQueueWeight);
 }
