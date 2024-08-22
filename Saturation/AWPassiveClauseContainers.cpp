@@ -402,9 +402,17 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
   // compute limits for age-queue
   if (_simulationCurrAgeIt.hasNext())
   {
-    // the age-queue is in use and the simulation didn't get to the end of the age-queue => set limits on age-queue
-    maxAgeQueueAge = _simulationCurrAgeCl->age();
-    maxAgeQueueWeight = _simulationCurrAgeCl->weightForClauseSelection(_opt);
+    if (_opt.lrsWeightLimitOnly())
+    {
+      // if the option lrsWeightLimitOnly() is set, we want to discard all clauses which are too heavy, regardless of the age.
+      // we therefore make sure that fulfilsAgeLimit() always fails.
+      maxAgeQueueAge = 0;
+      maxAgeQueueWeight = 0;
+    } else {
+      // the age-queue is in use and the simulation didn't get to the end of the age-queue => set limits on age-queue
+      maxAgeQueueAge = _simulationCurrAgeCl->age();
+      maxAgeQueueWeight = _simulationCurrAgeCl->weightForClauseSelection(_opt);
+    }
   }
   else
   {
@@ -423,15 +431,6 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
   {
     // the weight-queue is in use and the simulation got to the end of the weight-queue => set no limits on weight-queue
     maxWeightQueueWeight = UINT_MAX;
-  }
-
-  // TODO: force in Options that weightRatio is positive if lrsWeightLimitOnly() is set to 'on'.
-  if (_opt.lrsWeightLimitOnly())
-  {
-    // if the option lrsWeightLimitOnly() is set, we want to discard all clauses which are too heavy, regardless of the age.
-    // we therefore make sure that fulfilsAgeLimit() always fails.
-    maxAgeQueueAge = 0;
-    maxAgeQueueWeight = 0;
   }
 
   return setLimits(maxAgeQueueAge, maxAgeQueueWeight,maxWeightQueueWeight);
