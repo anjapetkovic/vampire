@@ -307,43 +307,6 @@ Clause* AWPassiveClauseContainer::popSelected()
   return cl;
 } // AWPassiveClauseContainer::popSelected
 
-void AWPassiveClauseContainer::onLimitsUpdated()
-{
-  if ( (_ageRatio > 0 && !ageLimited()) || (_weightRatio > 0 && !weightLimited()) )
-  {
-    return;
-  }
-
-  //Here we rely on (and maintain) the invariant, that
-  //_weightQueue and _ageQueue contain the same set
-  //of clauses, differing only in their order.
-  //(unless one of _ageRation or _weightRatio is equal to 0)
-
-  static Stack<Clause*> toRemove(256);
-  ClauseQueue::Iterator wit(_weightQueue);
-  while (wit.hasNext()) {
-    Clause* cl=wit.next();
-    if (!fulfilsAgeLimit(cl) && !fulfilsWeightLimit(cl)) {
-      toRemove.push(cl);
-    } else if (!childrenPotentiallyFulfilLimits(cl, cl->length())) {
-      toRemove.push(cl);
-    }
-  }
-
-#if OUTPUT_LRS_DETAILS
-  if (toRemove.isNonEmpty()) {
-    cout<<toRemove.size()<<" passive deleted, "<< (size()-toRemove.size()) <<" remains\n";
-  }
-#endif
-
-  while (toRemove.isNonEmpty()) {
-    Clause* removed=toRemove.pop();
-    RSTAT_CTR_INC("clauses discarded from passive on weight limit update");
-    env.statistics->discardedNonRedundantClauses++;
-    remove(removed);
-  }
-}
-
 void AWPassiveClauseContainer::simulationInit()
 {
   _simulationBalance = _balance;
@@ -473,19 +436,20 @@ void AWPassiveClauseContainer::simulationPopSelected()
   }
 }
 
-bool AWPassiveClauseContainer::setLimitsToMax()
+void AWPassiveClauseContainer::setLimitsToMax()
 {
-  return setLimits(UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX);
+  setLimits(UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX);
 }
 
-bool AWPassiveClauseContainer::setLimitsFromSimulation()
+void AWPassiveClauseContainer::setLimitsFromSimulation()
 {
   if (_ageRatio == 0)
   {
     if (_simulationCurrWeightCl == nullptr)
     {
       // degenerate case: weight-container is empty (and we don't use the age-container), so set limits to max.
-      return setLimitsToMax();
+      setLimitsToMax();
+      return;
     }
   }
   else if (_weightRatio == 0)
@@ -493,7 +457,8 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
     if (_simulationCurrAgeCl == nullptr)
     {
       // degenerate case: age-container is empty (and we don't use the weight-container), so set limits to max.
-      return setLimitsToMax();
+      setLimitsToMax();
+      return;
     }
   }
   else
@@ -505,7 +470,8 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
     if (_simulationCurrAgeCl == nullptr)
     {
       // degenerate case: both containers are empty, so set limits to max.
-      return setLimitsToMax();
+      setLimitsToMax();
+      return;
     }
     else
     {
@@ -575,34 +541,7 @@ bool AWPassiveClauseContainer::setLimitsFromSimulation()
     maxAgeQueueWeight = 0;
   }
 
-  return setLimits(maxAgeQueueAge, maxAgeQueueWeight,maxWeightQueueWeight, maxWeightQueueAge);
-}
-
-bool AWPassiveClauseContainer::childrenPotentiallyFulfilLimits(Clause* cl, unsigned upperBoundNumSelLits) const
-{
-  if (cl->age() == _ageSelectionMaxAge)
-  {
-    // creating a fake inference to represent our current (pessimistic) estimate potential
-    // FromInput - so that there is no Unit ownership issue
-    Inference inf = FromInput(UnitInputType::CONJECTURE); // CONJECTURE, so that derivedFromGoal is estimated as true
-    inf.setAge(cl->age() + 1); // clauses inferred from the clause as generating inferences will be over age limit...
-
-    int maxSelWeight=0;
-    for(unsigned i=0;i<upperBoundNumSelLits;i++) {
-      maxSelWeight=max((int)(*cl)[i]->weight(),maxSelWeight);
-    }
-    // TODO: this lower bound is not correct:
-    //       if Avatar is used, then the child-clause could become splittable,
-    //       in which case we don't know any lower bound on the resulting components.
-    unsigned weightLowerBound = cl->weight() - maxSelWeight; // heuristic: we assume that at most one literal will be removed from the clause.
-    unsigned numPositiveLiteralsParent = cl->numPositiveLiterals();
-    unsigned numPositiveLiteralsLowerBound = numPositiveLiteralsParent > 0 ? numPositiveLiteralsParent-1 : numPositiveLiteralsParent; // heuristic: we assume that at most one literal will be removed from the clause
-    if (!fulfilsWeightLimit(weightLowerBound, numPositiveLiteralsLowerBound, inf)) {
-      //and also over weight limit
-      return false;
-    }
-  }
-  return true;
+  setLimits(maxAgeQueueAge, maxAgeQueueWeight,maxWeightQueueWeight, maxWeightQueueAge);
 }
 
 bool AWPassiveClauseContainer::setLimits(unsigned newAgeSelectionMaxAge, unsigned newAgeSelectionMaxWeight, unsigned newWeightSelectionMaxWeight, unsigned newWeightSelectionMaxAge)

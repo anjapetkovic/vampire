@@ -74,11 +74,8 @@ public:
 protected:
   RandomAccessClauseContainer() :_salg(0) {}
   SaturationAlgorithm* getSaturationAlgorithm() { return _salg; }
-
-  virtual void onLimitsUpdated() {}
 private:
   SaturationAlgorithm* _salg;
-  SubscriptionData _limitChangeSData;
 };
 
 class PlainClauseContainer : public ClauseContainer {
@@ -113,8 +110,6 @@ public:
   PassiveClauseContainer(bool isOutermost, const Shell::Options& opt, std::string name = "") : _isOutermost(isOutermost), _opt(opt), _name(name) {}
   virtual ~PassiveClauseContainer(){};
 
-  LimitsChangeEvent changedEvent;
-
   virtual bool isEmpty() const = 0;
   virtual Clause* popSelected() = 0;
 
@@ -130,11 +125,9 @@ public:
   virtual void simulationPopSelected() = 0;
 
   // returns whether at least one of the limits was tightened
-  virtual bool setLimitsToMax() = 0;
+  virtual void setLimitsToMax() {};
   // returns whether at least one of the limits was tightened
-  virtual bool setLimitsFromSimulation() = 0;
-
-  virtual void onLimitsUpdated() = 0;
+  virtual void setLimitsFromSimulation() {};
 
   /*
    * LRS specific methods and fields for usage of limits
@@ -153,9 +146,6 @@ public:
   // age is to be recovered from inference
   // this method internally takes care of computing the corresponding weightForClauseSelection.
   virtual bool fulfilsWeightLimit(unsigned w, unsigned numPositiveLiterals, const Inference& inference) const = 0;
-  
-  virtual bool childrenPotentiallyFulfilLimits(Clause* cl, unsigned upperBoundNumSelLits) const = 0;
-
 protected:
   bool _isOutermost;
   const Shell::Options& _opt;
@@ -176,8 +166,6 @@ public:
   unsigned sizeEstimate() const override { return _clauses.size(); }
   ClauseIterator clauses() const { return pvi(_clauses.iter()); }
 
-protected:
-  void onLimitsUpdated() override;
 private:
   Set<Clause*> _clauses;
   // const Shell::Options& _opt;

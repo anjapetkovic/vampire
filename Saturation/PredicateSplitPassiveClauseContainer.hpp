@@ -38,7 +38,7 @@ private:
 
   std::vector<std::unique_ptr<PassiveClauseContainer>> _queues;
   std::vector<float> _cutoffs;
-  std::vector<unsigned> _invertedRatios;  
+  std::vector<unsigned> _invertedRatios;
   std::vector<unsigned> _balances;
   bool _layeredArrangement; // if set to true, queues are arranged as multi-split-queues. if false, queues use a tammet-style arrangement.
 
@@ -56,11 +56,9 @@ public:
   void simulationPopSelected() override;
 
   // returns whether at least one of the limits was tightened
-  bool setLimitsToMax() override;
+  void setLimitsToMax() override;
   // returns whether at least one of the limits was tightened
-  bool setLimitsFromSimulation() override;
-
-  void onLimitsUpdated() override;
+  void setLimitsFromSimulation() override;
 
 private:
   std::vector<unsigned> _simulationBalances;
@@ -82,8 +80,6 @@ public:
   // age is to be recovered from inference
   // this method internally takes care of computing the corresponding weightForClauseSelection.
   bool fulfilsWeightLimit(unsigned w, unsigned numPositiveLiterals, const Inference& inference) const override;
-  bool childrenPotentiallyFulfilLimits(Clause* cl, unsigned upperBoundNumSelLits) const override;
-  
 }; // class PredicateSplitPassiveClauseContainer
 
 class TheoryMultiSplitPassiveClauseContainer : public PredicateSplitPassiveClauseContainer

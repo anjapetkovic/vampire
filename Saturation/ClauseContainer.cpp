@@ -61,11 +61,9 @@ void RandomAccessClauseContainer::removeClauses(ClauseIterator cit)
 void RandomAccessClauseContainer::attach(SaturationAlgorithm* salg)
 {
   ASS(!_salg);
-
   _salg=salg;
-  _limitChangeSData=_salg->getPassiveClauseContainer()->changedEvent.subscribe(
-      this, &RandomAccessClauseContainer::onLimitsUpdated);
 }
+
 /**
  * Detach from the SaturationAlgorithm object.
  *
@@ -75,8 +73,6 @@ void RandomAccessClauseContainer::attach(SaturationAlgorithm* salg)
 void RandomAccessClauseContainer::detach()
 {
   ASS(_salg);
-
-  _limitChangeSData->unsubscribe();
   _salg=0;
 }
 
@@ -109,16 +105,10 @@ void PassiveClauseContainer::updateLimits(long long estReachableCnt)
 {
   ASS_GE(estReachableCnt,0);
 
-  bool atLeastOneLimitTightened;
-
   // optimization: if the estimated number of clause-selections is higher than the number of clauses in passive,
   // we already conclude that we will select all clauses, so we set the limits accordingly.
   if (estReachableCnt > static_cast<long long>(sizeEstimate())) {
-    atLeastOneLimitTightened = setLimitsToMax();
-    if (atLeastOneLimitTightened) {
-      onLimitsUpdated();
-    }
-    return;
+    setLimitsToMax();
   }
   // otherwise we run the simulation and set the limits accordingly
   else
@@ -134,14 +124,9 @@ void PassiveClauseContainer::updateLimits(long long estReachableCnt)
       remains--;
     }
 
-    atLeastOneLimitTightened = setLimitsFromSimulation();
+    setLimitsFromSimulation();
 
     Clause::releaseAux();
-  }
-
-  if (atLeastOneLimitTightened) {
-    // trigger a change event, in order to notify both passive and active clause-containers
-    changedEvent.fire();
   }
 }
 
@@ -152,7 +137,7 @@ void ActiveClauseContainer::add(Clause* c)
   TIME_TRACE("add clause")
 
   ASS(c->store()==Clause::ACTIVE);
-  ALWAYS(_clauses.insert(c));  
+  ALWAYS(_clauses.insert(c));
   addedEvent.fire(c);
 }
 
@@ -168,47 +153,6 @@ void ActiveClauseContainer::remove(Clause* c)
   ALWAYS(_clauses.remove(c));
   removedEvent.fire(c);
 } // Active::ClauseContainer::remove
-
-void ActiveClauseContainer::onLimitsUpdated()
-{
-  auto limits=getSaturationAlgorithm()->getPassiveClauseContainer();
-  ASS(limits);
-  if (!limits->ageLimited() || !limits->weightLimited()) {
-    return;
-  }
-
-  static Stack<Clause*> toRemove(64);
-  toRemove.reset();
-
-  auto rit = _clauses.iter();
-  while (rit.hasNext()) {
-    Clause* cl=rit.next();
-    ASS(cl);
-
-    if (!limits->childrenPotentiallyFulfilLimits(cl, cl->numSelected()))
-    {
-      ASS(cl->store()==Clause::ACTIVE);
-      toRemove.push(cl);
-    }
-  }
-
-#if OUTPUT_LRS_DETAILS
-  if (toRemove.isNonEmpty()) {
-    cout<<toRemove.size()<<" active deleted\n";
-  }
-#endif
-
-  while (toRemove.isNonEmpty()) {
-    Clause* removed=toRemove.pop();
-    ASS(removed->store()==Clause::ACTIVE);
-
-    RSTAT_CTR_INC("clauses discarded from active on weight limit update");
-    env.statistics->discardedNonRedundantClauses++;
-
-    remove(removed);
-    // ASS_NEQ(removed->store(), Clause::ACTIVE); -- the remove could have deleted the clause - do not touch!
-  }
-}
 
 }
 

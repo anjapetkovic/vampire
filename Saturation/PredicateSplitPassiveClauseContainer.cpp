@@ -311,34 +311,18 @@ void PredicateSplitPassiveClauseContainer::simulationPopSelected()
 }
 
 // returns whether at least one of the limits was tightened
-bool PredicateSplitPassiveClauseContainer::setLimitsToMax()
+void PredicateSplitPassiveClauseContainer::setLimitsToMax()
 {
-  bool tightened = false;
-  for (const auto& queue : _queues)
-  {
-    bool currTightened = queue->setLimitsToMax();
-    tightened = tightened || currTightened;
+  for (const auto& queue : _queues) {
+    queue->setLimitsToMax();
   }
-  return tightened;
 }
 
 // returns whether at least one of the limits was tightened
-bool PredicateSplitPassiveClauseContainer::setLimitsFromSimulation()
+void PredicateSplitPassiveClauseContainer::setLimitsFromSimulation()
 {
-  bool tightened = false;
-  for (const auto& queue : _queues)
-  {
-    bool currTightened = queue->setLimitsFromSimulation();
-    tightened = tightened || currTightened;
-  }
-  return tightened;
-}
-
-void PredicateSplitPassiveClauseContainer::onLimitsUpdated()
-{
-  for (const auto& queue : _queues)
-  {
-    queue->onLimitsUpdated();
+  for (const auto& queue : _queues) {
+    queue->setLimitsFromSimulation();
   }
 }
 
@@ -441,20 +425,6 @@ bool PredicateSplitPassiveClauseContainer::fulfilsWeightLimit(unsigned w, unsign
   {
     auto& queue = _queues[i];
     if (queue->fulfilsWeightLimit(w, numPositiveLiterals, inference))
-    {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool PredicateSplitPassiveClauseContainer::childrenPotentiallyFulfilLimits(Clause* cl, unsigned upperBoundNumSelLits) const 
-{
-  // can't conclude any lower bounds on niceness of child-clause, so have to assume that it is potentially added to all queues.
-  // In particular we need to check whether at least one of the queues could potentially select children of the clause.
-  for (const auto& queue : _queues)
-  {
-    if (queue->childrenPotentiallyFulfilLimits(cl, upperBoundNumSelLits))
     {
       return true;
     }
