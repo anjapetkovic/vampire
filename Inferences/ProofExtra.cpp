@@ -24,7 +24,7 @@ void LiteralInferenceExtra::output(std::ostream &out) const {
 }
 
 void TwoLiteralInferenceExtra::output(std::ostream &out) const {
-  LiteralInferenceExtra::output(out);
+  selectedLiteral.output(out);
   out << ",other=(" << otherLiteral->toString() << ')';
 }
 
@@ -33,9 +33,9 @@ void RewriteInferenceExtra::output(std::ostream &out) const {
 }
 
 void TwoLiteralRewriteInferenceExtra::output(std::ostream &out) const {
-  TwoLiteralInferenceExtra::output(out);
+  selected.output(out);
   out << ',';
-  RewriteInferenceExtra::output(out);
+  rewrite.output(out);
 }
 
 } // namespace Inferences
