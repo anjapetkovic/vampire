@@ -24,7 +24,7 @@
 namespace Inferences {
 
 // inferences that use one literal from their main premise
-struct LiteralInferenceExtra : virtual public InferenceExtra {
+struct LiteralInferenceExtra : public InferenceExtra {
   LiteralInferenceExtra(Kernel::Literal *selected) : selectedLiteral(selected) {}
 
   virtual void output(std::ostream &out) const override;
@@ -46,7 +46,7 @@ struct TwoLiteralInferenceExtra : public InferenceExtra {
   Kernel::Literal *otherLiteral;
 };
 
-struct RewriteInferenceExtra : virtual public InferenceExtra {
+struct RewriteInferenceExtra : public InferenceExtra {
   RewriteInferenceExtra(Kernel::TermList lhs, Kernel::TermList target)
     : lhs(lhs), target(target) {}
 
